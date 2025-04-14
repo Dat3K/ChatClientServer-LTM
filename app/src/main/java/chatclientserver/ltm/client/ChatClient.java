@@ -1,0 +1,285 @@
+package chatclientserver.ltm.client;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import chatclientserver.ltm.encryption.PlayfairCipher;
+import chatclientserver.ltm.model.FileTransfer;
+import chatclientserver.ltm.model.Message;
+import chatclientserver.ltm.util.Constants;
+import chatclientserver.ltm.util.FileUtils;
+
+/**
+ * Client class for the chat application.
+ * This class handles the communication with the server.
+ */
+public class ChatClient {
+    private Socket socket;
+    private ObjectOutputStream outputStream;
+    private ObjectInputStream inputStream;
+    private boolean connected;
+    private ExecutorService executorService;
+    private MessageListener messageListener;
+    private String currentKey;
+    
+    /**
+     * Constructs a ChatClient.
+     */
+    public ChatClient() {
+        executorService = Executors.newSingleThreadExecutor();
+        currentKey = Constants.DEFAULT_KEY;
+    }
+    
+    /**
+     * Connects to the server.
+     * 
+     * @param host The server host
+     * @param port The server port
+     * @return true if the connection was successful, false otherwise
+     */
+    public boolean connect(String host, int port) {
+        try {
+            socket = new Socket(host, port);
+            outputStream = new ObjectOutputStream(socket.getOutputStream());
+            inputStream = new ObjectInputStream(socket.getInputStream());
+            connected = true;
+            
+            // Start listening for messages from the server
+            executorService.execute(this::listenForMessages);
+            
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error connecting to server: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Disconnects from the server.
+     */
+    public void disconnect() {
+        connected = false;
+        
+        try {
+            if (outputStream != null) {
+                outputStream.close();
+            }
+            if (inputStream != null) {
+                inputStream.close();
+            }
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            System.err.println("Error disconnecting from server: " + e.getMessage());
+        }
+        
+        executorService.shutdown();
+    }
+    
+    /**
+     * Sends a text message to the server.
+     * 
+     * @param text The text to send
+     * @param key The encryption key
+     * @return true if the message was sent successfully, false otherwise
+     */
+    public boolean sendMessage(String text, String key) {
+        if (!connected) {
+            return false;
+        }
+        
+        try {
+            // Encrypt the message
+            PlayfairCipher cipher = new PlayfairCipher(key);
+            String encryptedMessage = cipher.encrypt(text);
+            
+            // Create a message object
+            Message message = new Message();
+            message.setEncryptedMessage(encryptedMessage);
+            message.setKey(key);
+            
+            // Send the message
+            outputStream.writeInt(Constants.MESSAGE_TYPE_TEXT);
+            outputStream.writeObject(message);
+            outputStream.flush();
+            
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error sending message: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Sends a file to the server.
+     * 
+     * @param file The file to send
+     * @return true if the file was sent successfully, false otherwise
+     */
+    public boolean sendFile(File file) {
+        if (!connected || !file.exists()) {
+            return false;
+        }
+        
+        try {
+            // Read the file
+            byte[] fileData = FileUtils.readFileToByteArray(file);
+            
+            // Create a file transfer object
+            FileTransfer fileTransfer = new FileTransfer();
+            fileTransfer.setFileName(file.getName());
+            fileTransfer.setFileSize(file.length());
+            fileTransfer.setFileType(FileUtils.getFileType(file.getName()));
+            fileTransfer.setFileData(fileData);
+            
+            // Send the file
+            outputStream.writeInt(Constants.MESSAGE_TYPE_FILE);
+            outputStream.writeObject(fileTransfer);
+            outputStream.flush();
+            
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error sending file: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Sends a key exchange message to the server.
+     * 
+     * @param key The key to exchange
+     * @return true if the key was sent successfully, false otherwise
+     */
+    public boolean sendKeyExchange(String key) {
+        if (!connected) {
+            return false;
+        }
+        
+        try {
+            // Send the key
+            outputStream.writeInt(Constants.MESSAGE_TYPE_KEY_EXCHANGE);
+            outputStream.writeObject(key);
+            outputStream.flush();
+            
+            // Update the current key
+            currentKey = key;
+            
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error sending key exchange: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Listens for messages from the server.
+     */
+    private void listenForMessages() {
+        try {
+            while (connected) {
+                // Read the message type
+                int messageType = inputStream.readInt();
+                
+                switch (messageType) {
+                    case Constants.MESSAGE_TYPE_PHRASE_POSITIONS:
+                        handlePhrasePositions();
+                        break;
+                    case Constants.MESSAGE_TYPE_KEY_EXCHANGE:
+                        handleKeyExchange();
+                        break;
+                    default:
+                        System.err.println("Unknown message type: " + messageType);
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            if (connected) {
+                System.err.println("Error listening for messages: " + e.getMessage());
+                disconnect();
+            }
+        }
+    }
+    
+    /**
+     * Handles a phrase positions message from the server.
+     * 
+     * @throws IOException If an I/O error occurs
+     * @throws ClassNotFoundException If the class of a serialized object cannot be found
+     */
+    private void handlePhrasePositions() throws IOException, ClassNotFoundException {
+        // Read the positions
+        String positions = (String) inputStream.readObject();
+        
+        // Notify the listener
+        if (messageListener != null) {
+            messageListener.onPhrasePositionsReceived(positions);
+        }
+    }
+    
+    /**
+     * Handles a key exchange message from the server.
+     * 
+     * @throws IOException If an I/O error occurs
+     * @throws ClassNotFoundException If the class of a serialized object cannot be found
+     */
+    private void handleKeyExchange() throws IOException, ClassNotFoundException {
+        // Read the key
+        String key = (String) inputStream.readObject();
+        
+        // Notify the listener
+        if (messageListener != null) {
+            messageListener.onKeyExchangeReceived(key);
+        }
+    }
+    
+    /**
+     * Sets the message listener.
+     * 
+     * @param listener The listener to set
+     */
+    public void setMessageListener(MessageListener listener) {
+        this.messageListener = listener;
+    }
+    
+    /**
+     * Gets the current key.
+     * 
+     * @return The current key
+     */
+    public String getCurrentKey() {
+        return currentKey;
+    }
+    
+    /**
+     * Checks if the client is connected to the server.
+     * 
+     * @return true if connected, false otherwise
+     */
+    public boolean isConnected() {
+        return connected;
+    }
+    
+    /**
+     * Interface for listening to messages from the server.
+     */
+    public interface MessageListener {
+        /**
+         * Called when phrase positions are received from the server.
+         * 
+         * @param positions The positions as a string
+         */
+        void onPhrasePositionsReceived(String positions);
+        
+        /**
+         * Called when a key exchange is received from the server.
+         * 
+         * @param key The key
+         */
+        void onKeyExchangeReceived(String key);
+    }
+}
