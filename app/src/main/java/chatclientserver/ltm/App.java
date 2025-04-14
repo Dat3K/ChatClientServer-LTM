@@ -64,6 +64,9 @@ public class App {
         SwingUtilities.invokeLater(() -> {
             ClientGUI gui = new ClientGUI();
             gui.setVisible(true);
+
+            // Show login dialog automatically
+            gui.showLoginDialog();
         });
     }
 

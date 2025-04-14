@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import chatclientserver.ltm.encryption.PlayfairCipher;
 import chatclientserver.ltm.model.FileTransfer;
 import chatclientserver.ltm.model.Message;
+import chatclientserver.ltm.model.User;
 import chatclientserver.ltm.util.Constants;
 import chatclientserver.ltm.util.FileUtils;
 
@@ -26,7 +27,8 @@ public class ChatClient {
     private ExecutorService executorService;
     private MessageListener messageListener;
     private String currentKey;
-    
+    private User currentUser;
+
     /**
      * Constructs a ChatClient.
      */
@@ -34,37 +36,57 @@ public class ChatClient {
         executorService = Executors.newSingleThreadExecutor();
         currentKey = Constants.DEFAULT_KEY;
     }
-    
+
     /**
      * Connects to the server.
-     * 
+     *
      * @param host The server host
      * @param port The server port
+     * @param user The authenticated user (can be null for anonymous connection)
      * @return true if the connection was successful, false otherwise
      */
-    public boolean connect(String host, int port) {
+    public boolean connect(String host, int port, User user) {
         try {
             socket = new Socket(host, port);
             outputStream = new ObjectOutputStream(socket.getOutputStream());
             inputStream = new ObjectInputStream(socket.getInputStream());
             connected = true;
-            
+            currentUser = user;
+
             // Start listening for messages from the server
             executorService.execute(this::listenForMessages);
-            
+
+            // Send user info to server if authenticated
+            if (currentUser != null) {
+                outputStream.writeInt(Constants.MESSAGE_TYPE_USER_INFO);
+                outputStream.writeObject(currentUser);
+                outputStream.flush();
+            }
+
             return true;
         } catch (IOException e) {
             System.err.println("Error connecting to server: " + e.getMessage());
             return false;
         }
     }
-    
+
+    /**
+     * Connects to the server anonymously.
+     *
+     * @param host The server host
+     * @param port The server port
+     * @return true if the connection was successful, false otherwise
+     */
+    public boolean connect(String host, int port) {
+        return connect(host, port, null);
+    }
+
     /**
      * Disconnects from the server.
      */
     public void disconnect() {
         connected = false;
-        
+
         try {
             if (outputStream != null) {
                 outputStream.close();
@@ -78,13 +100,13 @@ public class ChatClient {
         } catch (IOException e) {
             System.err.println("Error disconnecting from server: " + e.getMessage());
         }
-        
+
         executorService.shutdown();
     }
-    
+
     /**
      * Sends a text message to the server.
-     * 
+     *
      * @param text The text to send
      * @param key The encryption key
      * @return true if the message was sent successfully, false otherwise
@@ -93,32 +115,37 @@ public class ChatClient {
         if (!connected) {
             return false;
         }
-        
+
         try {
             // Encrypt the message
             PlayfairCipher cipher = new PlayfairCipher(key);
             String encryptedMessage = cipher.encrypt(text);
-            
+
             // Create a message object
             Message message = new Message();
             message.setEncryptedMessage(encryptedMessage);
             message.setKey(key);
-            
+
+            // Set user ID if authenticated
+            if (currentUser != null) {
+                message.setUserId(currentUser.getId());
+            }
+
             // Send the message
             outputStream.writeInt(Constants.MESSAGE_TYPE_TEXT);
             outputStream.writeObject(message);
             outputStream.flush();
-            
+
             return true;
         } catch (IOException e) {
             System.err.println("Error sending message: " + e.getMessage());
             return false;
         }
     }
-    
+
     /**
      * Sends a file to the server.
-     * 
+     *
      * @param file The file to send
      * @return true if the file was sent successfully, false otherwise
      */
@@ -126,33 +153,38 @@ public class ChatClient {
         if (!connected || !file.exists()) {
             return false;
         }
-        
+
         try {
             // Read the file
             byte[] fileData = FileUtils.readFileToByteArray(file);
-            
+
             // Create a file transfer object
             FileTransfer fileTransfer = new FileTransfer();
             fileTransfer.setFileName(file.getName());
             fileTransfer.setFileSize(file.length());
             fileTransfer.setFileType(FileUtils.getFileType(file.getName()));
             fileTransfer.setFileData(fileData);
-            
+
+            // Set user ID if authenticated
+            if (currentUser != null) {
+                fileTransfer.setUserId(currentUser.getId());
+            }
+
             // Send the file
             outputStream.writeInt(Constants.MESSAGE_TYPE_FILE);
             outputStream.writeObject(fileTransfer);
             outputStream.flush();
-            
+
             return true;
         } catch (IOException e) {
             System.err.println("Error sending file: " + e.getMessage());
             return false;
         }
     }
-    
+
     /**
      * Sends a key exchange message to the server.
-     * 
+     *
      * @param key The key to exchange
      * @return true if the key was sent successfully, false otherwise
      */
@@ -160,23 +192,23 @@ public class ChatClient {
         if (!connected) {
             return false;
         }
-        
+
         try {
             // Send the key
             outputStream.writeInt(Constants.MESSAGE_TYPE_KEY_EXCHANGE);
             outputStream.writeObject(key);
             outputStream.flush();
-            
+
             // Update the current key
             currentKey = key;
-            
+
             return true;
         } catch (IOException e) {
             System.err.println("Error sending key exchange: " + e.getMessage());
             return false;
         }
     }
-    
+
     /**
      * Listens for messages from the server.
      */
@@ -185,7 +217,7 @@ public class ChatClient {
             while (connected) {
                 // Read the message type
                 int messageType = inputStream.readInt();
-                
+
                 switch (messageType) {
                     case Constants.MESSAGE_TYPE_PHRASE_POSITIONS:
                         handlePhrasePositions();
@@ -204,80 +236,107 @@ public class ChatClient {
             }
         }
     }
-    
+
     /**
      * Handles a phrase positions message from the server.
-     * 
+     *
      * @throws IOException If an I/O error occurs
      * @throws ClassNotFoundException If the class of a serialized object cannot be found
      */
     private void handlePhrasePositions() throws IOException, ClassNotFoundException {
         // Read the positions
         String positions = (String) inputStream.readObject();
-        
+
         // Notify the listener
         if (messageListener != null) {
             messageListener.onPhrasePositionsReceived(positions);
         }
     }
-    
+
     /**
      * Handles a key exchange message from the server.
-     * 
+     *
      * @throws IOException If an I/O error occurs
      * @throws ClassNotFoundException If the class of a serialized object cannot be found
      */
     private void handleKeyExchange() throws IOException, ClassNotFoundException {
         // Read the key
         String key = (String) inputStream.readObject();
-        
+
         // Notify the listener
         if (messageListener != null) {
             messageListener.onKeyExchangeReceived(key);
         }
     }
-    
+
     /**
      * Sets the message listener.
-     * 
+     *
      * @param listener The listener to set
      */
     public void setMessageListener(MessageListener listener) {
         this.messageListener = listener;
     }
-    
+
     /**
      * Gets the current key.
-     * 
+     *
      * @return The current key
      */
     public String getCurrentKey() {
         return currentKey;
     }
-    
+
+    /**
+     * Gets the current user.
+     *
+     * @return The current user, or null if not authenticated
+     */
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    /**
+     * Sets the current user.
+     *
+     * @param user The user to set
+     */
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+    }
+
     /**
      * Checks if the client is connected to the server.
-     * 
+     *
      * @return true if connected, false otherwise
      */
     public boolean isConnected() {
         return connected;
     }
-    
+
+    /**
+     * Checks if the client is authenticated.
+     *
+     * @return true if authenticated, false otherwise
+     */
+    public boolean isAuthenticated() {
+        return currentUser != null;
+    }
+
     /**
      * Interface for listening to messages from the server.
      */
     public interface MessageListener {
         /**
          * Called when phrase positions are received from the server.
-         * 
+         *
          * @param positions The positions as a string
          */
         void onPhrasePositionsReceived(String positions);
-        
+
         /**
          * Called when a key exchange is received from the server.
-         * 
+         *
          * @param key The key
          */
         void onKeyExchangeReceived(String key);

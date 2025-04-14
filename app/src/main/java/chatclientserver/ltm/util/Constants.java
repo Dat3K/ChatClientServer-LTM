@@ -13,6 +13,11 @@ public class Constants {
     public static final int MESSAGE_TYPE_FILE = 2;
     public static final int MESSAGE_TYPE_KEY_EXCHANGE = 3;
     public static final int MESSAGE_TYPE_PHRASE_POSITIONS = 4;
+    public static final int MESSAGE_TYPE_USER_INFO = 5;
+    public static final int MESSAGE_TYPE_LOGIN = 6;
+    public static final int MESSAGE_TYPE_REGISTER = 7;
+    public static final int MESSAGE_TYPE_LOGIN_RESULT = 8;
+    public static final int MESSAGE_TYPE_REGISTER_RESULT = 9;
 
     // File types
     public static final String FILE_TYPE_IMAGE = "image";
