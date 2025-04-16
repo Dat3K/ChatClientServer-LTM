@@ -19,6 +19,8 @@ import chatclientserver.ltm.model.User;
 import chatclientserver.ltm.util.Constants;
 import chatclientserver.ltm.util.FileUtils;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Handler for client connections.
  * This class is responsible for handling communication with a specific client.
@@ -125,8 +127,12 @@ public class ClientHandler implements Runnable {
 
         System.out.println("Decrypted message: " + decryptedMessage);
 
-        // Find occurrences of the search phrase
-        List<Integer> positions = findPhrasePositions(decryptedMessage, Constants.SEARCH_PHRASE);
+        // Prepare the search phrase to match the format of the decrypted message
+        String preparedSearchPhrase = prepareSearchPhrase(Constants.SEARCH_PHRASE);
+        System.out.println("Prepared search phrase: '" + preparedSearchPhrase + "'");
+
+        // Find occurrences of the prepared search phrase
+        List<Integer> positions = findPhrasePositions(decryptedMessage, preparedSearchPhrase);
         String positionsStr = positions.isEmpty() ? "Not found" : positions.toString();
         message.setPhrasePositions(positionsStr);
 
@@ -204,23 +210,38 @@ public class ClientHandler implements Runnable {
     }
 
     /**
+     * Prepares a search phrase to match the format of decrypted messages.
+     * This includes removing diacritical marks and replacing spaces with 'Z'.
+     *
+     * @param phrase The original search phrase
+     * @return The prepared search phrase
+     */
+    private String prepareSearchPhrase(String phrase) {
+        // Remove diacritical marks (convert Vietnamese to non-accented form)
+        String normalized = StringUtils.stripAccents(phrase);
+
+        // Replace spaces with 'Z' (same as in PlayfairCipher)
+        normalized = normalized.replace(' ', 'Z');
+
+        // Convert to uppercase (decrypted messages are in uppercase)
+        return normalized.toUpperCase();
+    }
+
+    /**
      * Finds all positions of a phrase in a text.
      *
      * @param text The text to search in
-     * @param phrase The phrase to search for
+     * @param phrase The phrase to search for (should already be prepared)
      * @return A list of positions where the phrase occurs
      */
     private List<Integer> findPhrasePositions(String text, String phrase) {
         List<Integer> positions = new ArrayList<>();
 
-        // Convert to lowercase for case-insensitive search
-        String lowerText = text.toLowerCase();
-        String lowerPhrase = phrase.toLowerCase();
-
-        int index = lowerText.indexOf(lowerPhrase);
+        // No need to convert to lowercase since both the text and phrase are already in uppercase
+        int index = text.indexOf(phrase);
         while (index >= 0) {
             positions.add(index);
-            index = lowerText.indexOf(lowerPhrase, index + 1);
+            index = text.indexOf(phrase, index + 1);
         }
 
         return positions;
