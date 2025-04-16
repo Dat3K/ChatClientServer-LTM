@@ -55,12 +55,21 @@ public class ClientHandler implements Runnable {
             FileUtils.createReceivedFilesDir();
         } catch (IOException e) {
             System.err.println("Error creating streams: " + e.getMessage());
+            // Close resources to prevent leaks
+            close();
         }
     }
 
     @Override
     public void run() {
         running = true;
+
+        // Check if streams were created successfully
+        if (inputStream == null || outputStream == null) {
+            System.err.println("Cannot start client handler: streams not initialized");
+            close();
+            return;
+        }
 
         try {
             while (running) {
@@ -124,7 +133,7 @@ public class ClientHandler implements Runnable {
         System.out.println("Positions of '" + Constants.SEARCH_PHRASE + "': " + positionsStr);
 
         // Save the message to the database
-        int messageId = messageDAO.saveMessage(message);
+        messageDAO.saveMessage(message);
 
         // Send the positions back to the client
         outputStream.writeInt(Constants.MESSAGE_TYPE_PHRASE_POSITIONS);
@@ -154,7 +163,7 @@ public class ClientHandler implements Runnable {
         File file = FileUtils.writeByteArrayToFile(fileTransfer.getFileData(), fileTransfer.getFileName());
 
         // Save the file transfer record to the database
-        int fileTransferId = fileTransferDAO.saveFileTransfer(fileTransfer);
+        fileTransferDAO.saveFileTransfer(fileTransfer);
 
         System.out.println("File saved to: " + file.getAbsolutePath());
     }

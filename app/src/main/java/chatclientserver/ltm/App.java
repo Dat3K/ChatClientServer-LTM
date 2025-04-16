@@ -63,7 +63,9 @@ public class App {
     private static void startClient() {
         SwingUtilities.invokeLater(() -> {
             ClientGUI gui = new ClientGUI();
-            gui.setVisible(true);
+
+            // Don't show the GUI yet, only show login dialog
+            // GUI will only be visible after successful login and connection
 
             // Show login dialog automatically
             gui.showLoginDialog();
@@ -76,8 +78,8 @@ public class App {
     private static void startServer() {
         try {
             System.out.println("Starting Chat Server...");
-            ChatServer.getInstance().start(Constants.SERVER_PORT);
-            System.out.println("Server is running on port " + Constants.SERVER_PORT);
+            ChatServer.getInstance().start(Constants.DEFAULT_SERVER_PORT);
+            System.out.println("Server is running on port " + Constants.DEFAULT_SERVER_PORT);
 
             // Add a shutdown hook to stop the server gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

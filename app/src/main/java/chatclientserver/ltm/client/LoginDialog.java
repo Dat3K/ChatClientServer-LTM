@@ -29,6 +29,8 @@ public class LoginDialog extends JDialog {
 
     private JTextField usernameField;
     private JPasswordField passwordField;
+    private JTextField serverHostField;
+    private JTextField serverPortField;
     private JButton loginButton;
     private JButton registerButton;
     private JButton cancelButton;
@@ -36,6 +38,8 @@ public class LoginDialog extends JDialog {
     private UserDAO userDAO;
     private User authenticatedUser;
     private boolean loginSuccessful;
+    private String serverHost;
+    private int serverPort;
 
     /**
      * Constructs a LoginDialog.
@@ -65,6 +69,13 @@ public class LoginDialog extends JDialog {
     private void initComponents() {
         usernameField = new JTextField(20);
         passwordField = new JPasswordField(20);
+
+        // Server connection fields with default values
+        serverHostField = new JTextField(20);
+        serverHostField.setText("localhost");
+
+        serverPortField = new JTextField(5);
+        serverPortField.setText("8888");
 
         loginButton = new JButton("Login");
         registerButton = new JButton("Register");
@@ -103,6 +114,26 @@ public class LoginDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1;
         inputPanel.add(passwordField, gbc);
+
+        // Server Host
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        inputPanel.add(new JLabel("Server Host:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        inputPanel.add(serverHostField, gbc);
+
+        // Server Port
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0;
+        inputPanel.add(new JLabel("Server Port:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        inputPanel.add(serverPortField, gbc);
 
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -171,15 +202,40 @@ public class LoginDialog extends JDialog {
     private void login() {
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
+        String host = serverHostField.getText().trim();
+        String portStr = serverPortField.getText().trim();
 
+        // Validate login credentials
         if (username.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter both username and password.", "Login Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // Validate server information
+        if (host.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a server host.", "Connection Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int port;
+        try {
+            port = Integer.parseInt(portStr);
+            if (port <= 0 || port > 65535) {
+                throw new NumberFormatException("Port must be between 1 and 65535");
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid port number (1-65535).", "Connection Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Authenticate user
         authenticatedUser = userDAO.authenticateUser(username, password);
 
         if (authenticatedUser != null) {
+            // Store server information
+            serverHost = host;
+            serverPort = port;
+
             loginSuccessful = true;
             dispose();
         } else {
@@ -219,5 +275,23 @@ public class LoginDialog extends JDialog {
      */
     public User getAuthenticatedUser() {
         return authenticatedUser;
+    }
+
+    /**
+     * Gets the server host entered by the user.
+     *
+     * @return The server host
+     */
+    public String getServerHost() {
+        return serverHost;
+    }
+
+    /**
+     * Gets the server port entered by the user.
+     *
+     * @return The server port
+     */
+    public int getServerPort() {
+        return serverPort;
     }
 }

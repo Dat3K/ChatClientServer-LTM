@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,7 +46,28 @@ public class ChatClient {
      * @param user The authenticated user (can be null for anonymous connection)
      * @return true if the connection was successful, false otherwise
      */
+    private String lastErrorMessage = "";
+
+    /**
+     * Gets the last error message.
+     *
+     * @return The last error message
+     */
+    public String getLastErrorMessage() {
+        return lastErrorMessage;
+    }
+
     public boolean connect(String host, int port, User user) {
+        // Reset error message
+        lastErrorMessage = "";
+
+        // Check if server is running first
+        if (!isServerRunning(host, port)) {
+            lastErrorMessage = "Server is not running at " + host + ":" + port;
+            System.err.println(lastErrorMessage);
+            return false;
+        }
+
         try {
             socket = new Socket(host, port);
             outputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -65,7 +87,9 @@ public class ChatClient {
 
             return true;
         } catch (IOException e) {
-            System.err.println("Error connecting to server: " + e.getMessage());
+            lastErrorMessage = "Error connecting to server: " + e.getMessage();
+            System.err.println(lastErrorMessage);
+            e.printStackTrace(); // Print stack trace for debugging
             return false;
         }
     }
@@ -79,6 +103,36 @@ public class ChatClient {
      */
     public boolean connect(String host, int port) {
         return connect(host, port, null);
+    }
+
+    /**
+     * Checks if the server is running at the specified host and port.
+     *
+     * @param host The server host
+     * @param port The server port
+     * @return true if the server is running, false otherwise
+     */
+    private boolean isServerRunning(String host, int port) {
+        Socket testSocket = null;
+        try {
+            // Try to connect to the server
+            testSocket = new Socket();
+            testSocket.connect(new InetSocketAddress(host, port), 2000); // 2 seconds timeout
+            return true;
+        } catch (IOException e) {
+            // Server is not running or cannot be reached
+            lastErrorMessage = "Cannot connect to server: " + e.getMessage();
+            System.err.println(lastErrorMessage);
+            return false;
+        } finally {
+            if (testSocket != null && !testSocket.isClosed()) {
+                try {
+                    testSocket.close();
+                } catch (IOException e) {
+                    // Ignore
+                }
+            }
+        }
     }
 
     /**

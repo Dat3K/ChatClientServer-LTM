@@ -10,15 +10,15 @@ import chatclientserver.ltm.util.Constants;
 public class ServerMain {
     /**
      * The main method to start the server.
-     * 
+     *
      * @param args Command line arguments (not used)
      */
     public static void main(String[] args) {
         try {
             System.out.println("Starting Chat Server...");
-            ChatServer.getInstance().start(Constants.SERVER_PORT);
-            System.out.println("Server is running on port " + Constants.SERVER_PORT);
-            
+            ChatServer.getInstance().start(Constants.DEFAULT_SERVER_PORT);
+            System.out.println("Server is running on port " + Constants.DEFAULT_SERVER_PORT);
+
             // Add a shutdown hook to stop the server gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Shutting down server...");

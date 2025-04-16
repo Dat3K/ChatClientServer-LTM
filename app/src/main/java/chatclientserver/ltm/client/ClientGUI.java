@@ -48,9 +48,9 @@ public class ClientGUI extends JFrame implements MessageListener {
     private JTextField keyField;
     private JButton sendButton;
     private JButton fileButton;
-    private JButton connectButton;
+    private JButton logoutButton;
     private JButton keyExchangeButton;
-    private JButton loginButton;
+    // loginButton removed
     private JLabel statusLabel;
     private JLabel positionsLabel;
     private JLabel userLabel;
@@ -122,14 +122,13 @@ public class ClientGUI extends JFrame implements MessageListener {
         fileButton = new JButton("Send File");
         fileButton.setEnabled(false);
 
-        connectButton = new JButton("Connect");
-        connectButton.setEnabled(false); // Disabled until login
+        logoutButton = new JButton("Logout");
+        logoutButton.setEnabled(false); // Disabled until login
 
         keyExchangeButton = new JButton("Exchange Key");
         keyExchangeButton.setEnabled(false);
 
-        loginButton = new JButton("Login");
-        loginButton.setEnabled(true);
+        // loginButton removed
 
         // Labels
         statusLabel = new JLabel("Not connected");
@@ -198,8 +197,8 @@ public class ClientGUI extends JFrame implements MessageListener {
 
         JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         connectionPanel.add(statusLabel);
-        connectionPanel.add(connectButton);
-        connectionPanel.add(loginButton);
+        connectionPanel.add(logoutButton);
+        // loginButton removed
 
         JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         userPanel.add(userLabel);
@@ -224,13 +223,19 @@ public class ClientGUI extends JFrame implements MessageListener {
      * Sets up the event handlers for the GUI components.
      */
     private void setupEventHandlers() {
-        // Connect button
-        connectButton.addActionListener(e -> {
-            if (!chatClient.isConnected()) {
-                connect();
-            } else {
+        // Logout button
+        logoutButton.addActionListener(e -> {
+            // Disconnect if connected
+            if (chatClient.isConnected()) {
                 disconnect();
             }
+
+            // Reset user info
+            chatClient.setCurrentUser(null);
+            updateUserLabel();
+
+            // Show login dialog with relogin flag
+            showLoginDialog(true);
         });
 
         // Send button
@@ -245,22 +250,32 @@ public class ClientGUI extends JFrame implements MessageListener {
         // Key exchange button
         keyExchangeButton.addActionListener(e -> exchangeKey());
 
-        // Login button
-        loginButton.addActionListener(e -> login());
+        // loginButton removed
     }
 
     /**
      * Connects to the server.
      */
-    private void connect() {
+    // Server connection information
+    private String serverHost;
+    private int serverPort;
+
+    /**
+     * Connects to the server.
+     *
+     * @return true if connection was successful, false otherwise
+     */
+    private boolean connect() {
         // If already authenticated, connect with user info
         User currentUser = chatClient.getCurrentUser();
-        boolean connected = chatClient.connect(Constants.SERVER_HOST, Constants.SERVER_PORT, currentUser);
+
+        // Use the server information from login dialog
+        boolean connected = chatClient.connect(serverHost, serverPort, currentUser);
 
         if (connected) {
-            statusLabel.setText("Connected to " + Constants.SERVER_HOST + ":" + Constants.SERVER_PORT);
+            statusLabel.setText("Connected to " + serverHost + ":" + serverPort);
             statusLabel.setForeground(Color.GREEN.darker());
-            connectButton.setText("Disconnect");
+            logoutButton.setEnabled(true);
             messageField.setEnabled(true);
             sendButton.setEnabled(true);
             fileButton.setEnabled(true);
@@ -274,8 +289,11 @@ public class ClientGUI extends JFrame implements MessageListener {
 
             // Add a welcome message
             appendToChatArea("Connected to server. You can now send messages and files.");
+
+            return true;
         } else {
-            JOptionPane.showMessageDialog(this, "Could not connect to the server.", "Connection Error", JOptionPane.ERROR_MESSAGE);
+            // Don't show error message here, it will be handled by the login method
+            return false;
         }
     }
 
@@ -287,7 +305,7 @@ public class ClientGUI extends JFrame implements MessageListener {
 
         statusLabel.setText("Not connected");
         statusLabel.setForeground(Color.RED);
-        connectButton.setText("Connect");
+        logoutButton.setEnabled(false);
         messageField.setEnabled(false);
         sendButton.setEnabled(false);
         fileButton.setEnabled(false);
@@ -415,15 +433,43 @@ public class ClientGUI extends JFrame implements MessageListener {
     /**
      * Shows the login dialog and handles the login process.
      * If login is successful, automatically connects to the server.
+     * If login is cancelled or fails, exits the application unless isRelogin is true.
+     * If connection fails, allows the user to try again.
+     *
+     * @param isRelogin true if this is a relogin after logout, false for initial login
+     */
+    public void showLoginDialog(boolean isRelogin) {
+        boolean loginSuccessful = login();
+
+        if (loginSuccessful) {
+            // Only show the GUI if login and connection were successful
+            setVisible(true);
+        } else if (!isRelogin) {
+            // If login was not successful (user cancelled) and this is not a relogin, exit the application
+            int option = JOptionPane.showConfirmDialog(
+                this,
+                "Do you want to exit the application?",
+                "Exit Confirmation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (option == JOptionPane.YES_OPTION) {
+                System.exit(0);
+            } else {
+                // User chose not to exit, try login again
+                showLoginDialog(isRelogin);
+            }
+        }
+    }
+
+    /**
+     * Shows the login dialog and handles the login process.
+     * If login is successful, automatically connects to the server.
      * If login is cancelled or fails, exits the application.
      */
     public void showLoginDialog() {
-        boolean loginSuccessful = login();
-
-        // If login was not successful, exit the application
-        if (!loginSuccessful) {
-            System.exit(0);
-        }
+        showLoginDialog(false);
     }
 
     /**
@@ -441,16 +487,71 @@ public class ClientGUI extends JFrame implements MessageListener {
             chatClient.setCurrentUser(user);
             updateUserLabel();
 
-            // Enable connect button after successful login
-            connectButton.setEnabled(true);
+            // Enable logout button after successful login
+            logoutButton.setEnabled(true);
 
-            JOptionPane.showMessageDialog(this, "Login successful. Welcome, " + user.getUsername() + "!", "Login", JOptionPane.INFORMATION_MESSAGE);
 
-            // Automatically connect to the server if not already connected
-            if (!chatClient.isConnected()) {
-                connect();
+            // Get server information from login dialog
+            serverHost = loginDialog.getServerHost();
+            serverPort = loginDialog.getServerPort();
+
+            // Create a loading dialog
+            LoadingDialog loadingDialog = new LoadingDialog(this, "Connecting to server at " + serverHost + ":" + serverPort);
+
+            // Create a final result holder (needed for lambda)
+            final boolean[] connectionResult = {false};
+
+            // Use a separate thread to connect so the UI doesn't freeze
+            Thread connectThread = new Thread(() -> {
+                try {
+                    // Try to connect
+                    boolean success = connect();
+                    connectionResult[0] = success;
+                } finally {
+                    // Close the loading dialog on the EDT
+                    SwingUtilities.invokeLater(() -> loadingDialog.dispose());
+                }
+            });
+
+            // Start the connection thread
+            connectThread.start();
+
+            // Show the loading dialog (this will block until the dialog is closed)
+            loadingDialog.setVisible(true);
+
+            // Wait for the connection thread to finish
+            try {
+                connectThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
+            // Check the connection result
+            if (!connectionResult[0]) {
+                // If connection failed, show error message and try again
+                String errorMessage = chatClient.getLastErrorMessage();
+                if (errorMessage.isEmpty()) {
+                    errorMessage = "Connection to server failed.";
+                }
+
+                int option = JOptionPane.showConfirmDialog(
+                    this,
+                    errorMessage + "\n\nWould you like to try again?",
+                    "Connection Error",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.ERROR_MESSAGE
+                );
+
+
+                if (option == JOptionPane.YES_OPTION) {
+                    // Try login again
+                    return login();
+                } else {
+                    // User chose not to try again
+                    return false;
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Login successful. Welcome, " + user.getUsername() + "!", "Login", JOptionPane.INFORMATION_MESSAGE);
             return true;
         }
 
@@ -465,11 +566,11 @@ public class ClientGUI extends JFrame implements MessageListener {
         if (currentUser != null) {
             userLabel.setText("Logged in as: " + currentUser.getUsername());
             userLabel.setForeground(Color.BLUE);
-            loginButton.setText("Change User");
+            // loginButton removed
         } else {
             userLabel.setText("Not logged in");
             userLabel.setForeground(Color.GRAY);
-            loginButton.setText("Login");
+            // loginButton removed
         }
     }
 

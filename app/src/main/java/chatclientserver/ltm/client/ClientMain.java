@@ -14,7 +14,9 @@ public class ClientMain {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             ClientGUI gui = new ClientGUI();
-            gui.setVisible(true);
+
+            // Don't show the GUI yet, only show login dialog
+            // GUI will only be visible after successful login and connection
 
             // Show login dialog automatically on startup
             gui.showLoginDialog();

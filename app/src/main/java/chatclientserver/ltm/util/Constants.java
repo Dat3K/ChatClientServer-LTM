@@ -4,9 +4,8 @@ package chatclientserver.ltm.util;
  * Constants used throughout the application.
  */
 public class Constants {
-    // Server configuration
-    public static final int SERVER_PORT = 8888;
-    public static final String SERVER_HOST = "localhost";
+    // Default server port for server startup
+    public static final int DEFAULT_SERVER_PORT = 8888;
 
     // Message types
     public static final int MESSAGE_TYPE_TEXT = 1;
