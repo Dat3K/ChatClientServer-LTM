@@ -39,8 +39,7 @@ public class App {
                 startServer();
                 return;
             } else if (arg.equals("both")) {
-                startServer();
-                startClient();
+                startBoth();
                 return;
             }
         }
@@ -66,8 +65,7 @@ public class App {
                 startServer();
                 break;
             case 2: // Both
-                startServer();
-                startClient();
+                startBoth();
                 break;
             default: // Exit or closed dialog
                 System.exit(0);
@@ -90,12 +88,22 @@ public class App {
     }
 
     /**
-     * Starts the chat server with a GUI.
+     * Starts the chat server with a GUI and automatically opens the port.
      */
     private static void startServer() {
         try {
             System.out.println("Starting Chat Server GUI...");
             ServerGUI serverGUI = new ServerGUI();
+
+            // Automatically start the server
+            boolean serverStarted = serverGUI.autoStartServer();
+
+            if (!serverStarted) {
+                System.err.println("Failed to automatically start the server. Starting GUI anyway.");
+            } else {
+                System.out.println("Server automatically started on default port.");
+            }
+
             serverGUI.setVisible(true);
 
             // Add a shutdown hook to stop the server gracefully
@@ -109,6 +117,46 @@ public class App {
                 null,
                 "Error starting server: " + e.getMessage(),
                 "Server Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    /**
+     * Starts both the chat client and server together.
+     * The server is automatically started when this method is called.
+     */
+    private static void startBoth() {
+        try {
+            System.out.println("Starting both Chat Client and Server...");
+
+            // Create the server GUI and automatically start the server
+            ServerGUI serverGUI = new ServerGUI();
+            boolean serverStarted = serverGUI.autoStartServer();
+
+            if (!serverStarted) {
+                System.err.println("Failed to automatically start the server. Starting GUI anyway.");
+            } else {
+                System.out.println("Server automatically started on default port.");
+            }
+
+            // Make the server GUI visible
+            serverGUI.setVisible(true);
+
+            // Start the client
+            startClient();
+
+            // Add a shutdown hook to stop the server gracefully
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("Shutting down server...");
+                ChatServer.getInstance().stop();
+            }));
+        } catch (Exception e) {
+            System.err.println("Error starting both client and server: " + e.getMessage());
+            JOptionPane.showMessageDialog(
+                null,
+                "Error starting both client and server: " + e.getMessage(),
+                "Startup Error",
                 JOptionPane.ERROR_MESSAGE
             );
         }

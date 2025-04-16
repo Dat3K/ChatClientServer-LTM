@@ -45,11 +45,11 @@ application {
     mainClass = 'chatclientserver.ltm.App'
 }
 
+// Create a fat JAR with all dependencies
 jar {
     manifest {
         attributes(
-            'Main-Class': 'chatclientserver.ltm.App',
-            'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
+            'Main-Class': 'chatclientserver.ltm.App'
         )
     }
     // Include all dependencies in the jar
@@ -57,6 +57,8 @@ jar {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveBaseName = 'app'
+    archiveVersion = ''
 }
 
 tasks.named('test') {

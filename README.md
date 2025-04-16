@@ -40,10 +40,28 @@
 
 ## Chạy ứng dụng
 
+### Sử dụng script chạy tự động
+
+1. **Windows**: Chạy file `run.bat` bằng cách nhấp đúp vào nó hoặc chạy lệnh:
+   ```
+   run.bat
+   ```
+
+2. **Linux/Mac**: Chạy file `run.sh` bằng lệnh:
+   ```
+   chmod +x run.sh
+   ./run.sh
+   ```
+
 ### Sử dụng Gradle
 
 ```
 ./gradlew run
+```
+
+Hoặc trên Windows:
+```
+gradlew.bat run
 ```
 
 **Lưu ý:** Nếu bạn gặp vấn đề khi chạy bằng Gradle, hãy sử dụng phương pháp chạy file JAR như hướng dẫn bên dưới.
@@ -187,12 +205,16 @@ Thuật toán Playfair là một kỹ thuật mã hóa thay thế sử dụng ma
 
 Nếu bạn gặp vấn đề khi chạy ứng dụng bằng lệnh `./gradlew run` hoặc `gradlew.bat run`, hãy thử các giải pháp sau:
 
-1. **Sử dụng file JAR trực tiếp**:
+1. **Sử dụng script chạy tự động**:
+   - Windows: Chạy file `run.bat`
+   - Linux/Mac: Chạy file `run.sh`
+
+2. **Sử dụng file JAR trực tiếp**:
    ```
    java -jar app\build\libs\app.jar
    ```
 
-2. **Chạy riêng server và client**:
+3. **Chạy riêng server và client**:
    ```
    java -cp app\build\libs\app.jar chatclientserver.ltm.server.ServerMain
    ```
@@ -201,10 +223,27 @@ Nếu bạn gặp vấn đề khi chạy ứng dụng bằng lệnh `./gradlew r
    java -cp app\build\libs\app.jar chatclientserver.ltm.client.ClientMain
    ```
 
-3. **Kiểm tra các cổng đang sử dụng**: Nếu bạn gặp lỗi "Address already in use", có thể cổng 8888 đã được sử dụng. Hãy sử dụng lệnh sau để kiểm tra và kết thúc các tiến trình đang sử dụng cổng đó:
+4. **Kiểm tra các cổng đang sử dụng**: Nếu bạn gặp lỗi "Address already in use", có thể cổng 8888 đã được sử dụng. Hãy sử dụng lệnh sau để kiểm tra và kết thúc các tiến trình đang sử dụng cổng đó:
    ```
    netstat -ano | findstr :8888
    taskkill /PID <PID> /F
+   ```
+
+### Không thể tạo file JAR
+
+Nếu bạn gặp vấn đề khi tạo file JAR, hãy thử các giải pháp sau:
+
+1. **Sử dụng script chạy tự động để build**:
+   - Windows: Chạy file `run.bat` và chọn tùy chọn 4 (Build the application)
+   - Linux/Mac: Chạy file `run.sh` và chọn tùy chọn 4 (Build the application)
+
+2. **Build thủ công**:
+   ```
+   ./gradlew clean build jar
+   ```
+   Hoặc trên Windows:
+   ```
+   gradlew.bat clean build jar
    ```
 
 ## Liên hệ

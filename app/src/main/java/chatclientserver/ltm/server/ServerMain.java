@@ -14,6 +14,16 @@ public class ServerMain {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             ServerGUI gui = new ServerGUI();
+
+            // Automatically start the server
+            boolean serverStarted = gui.autoStartServer();
+
+            if (!serverStarted) {
+                System.err.println("Failed to automatically start the server. Starting GUI anyway.");
+            } else {
+                System.out.println("Server automatically started on default port.");
+            }
+
             gui.setVisible(true);
 
             // Add a shutdown hook to stop the server gracefully
