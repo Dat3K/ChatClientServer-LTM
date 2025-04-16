@@ -1,31 +1,26 @@
 package chatclientserver.ltm.server;
 
-import java.io.IOException;
-
-import chatclientserver.ltm.util.Constants;
+import javax.swing.SwingUtilities;
 
 /**
- * Main class for starting the chat server.
+ * Main class for starting the chat server with a GUI.
  */
 public class ServerMain {
     /**
-     * The main method to start the server.
+     * The main method to start the server with a GUI.
      *
      * @param args Command line arguments (not used)
      */
     public static void main(String[] args) {
-        try {
-            System.out.println("Starting Chat Server...");
-            ChatServer.getInstance().start(Constants.DEFAULT_SERVER_PORT);
-            System.out.println("Server is running on port " + Constants.DEFAULT_SERVER_PORT);
+        SwingUtilities.invokeLater(() -> {
+            ServerGUI gui = new ServerGUI();
+            gui.setVisible(true);
 
             // Add a shutdown hook to stop the server gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Shutting down server...");
                 ChatServer.getInstance().stop();
             }));
-        } catch (IOException e) {
-            System.err.println("Error starting server: " + e.getMessage());
-        }
+        });
     }
 }

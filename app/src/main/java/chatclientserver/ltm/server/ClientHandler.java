@@ -35,6 +35,7 @@ public class ClientHandler implements Runnable {
     private FileTransferDAO fileTransferDAO;
     private UserDAO userDAO;
     private User currentUser;
+    private ChatServer server;
 
     /**
      * Constructs a ClientHandler for the specified client socket.
@@ -120,6 +121,11 @@ public class ClientHandler implements Runnable {
 
         System.out.println("Received encrypted message: " + message.getEncryptedMessage());
 
+        // Notify the server that a message has been received
+        if (server != null) {
+            server.notifyMessageReceived(this, message);
+        }
+
         // Decrypt the message
         PlayfairCipher cipher = new PlayfairCipher(message.getKey());
         String decryptedMessage = cipher.decrypt(message.getEncryptedMessage());
@@ -165,6 +171,11 @@ public class ClientHandler implements Runnable {
 
         System.out.println("Received file: " + fileTransfer.getFileName() + " (" + fileTransfer.getFileSize() + " bytes)");
 
+        // Notify the server that a file transfer has been received
+        if (server != null) {
+            server.notifyFileTransferReceived(this, fileTransfer);
+        }
+
         // Save the file
         File file = FileUtils.writeByteArrayToFile(fileTransfer.getFileData(), fileTransfer.getFileName());
 
@@ -186,6 +197,11 @@ public class ClientHandler implements Runnable {
 
         System.out.println("Received key: " + key);
 
+        // Notify the server that a key exchange has been received
+        if (server != null) {
+            server.notifyKeyExchangeReceived(this, key);
+        }
+
         // For now, just echo the key back to confirm receipt
         outputStream.writeInt(Constants.MESSAGE_TYPE_KEY_EXCHANGE);
         outputStream.writeObject(key);
@@ -206,6 +222,11 @@ public class ClientHandler implements Runnable {
             // Store the user info
             this.currentUser = user;
             System.out.println("User authenticated: " + user.getUsername());
+
+            // Notify the server that user information has been received
+            if (server != null) {
+                server.notifyUserInfoReceived(this, user);
+            }
         }
     }
 
@@ -278,5 +299,44 @@ public class ClientHandler implements Runnable {
      */
     public String getClientId() {
         return clientId;
+    }
+
+    /**
+     * Sets the server observer for this client handler.
+     *
+     * @param server The server to notify of events
+     */
+    public void setObserver(ChatServer server) {
+        this.server = server;
+    }
+
+    /**
+     * Gets the current user associated with this client handler.
+     *
+     * @return The current user, or null if not authenticated
+     */
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    /**
+     * Gets the IP address of the client.
+     *
+     * @return The IP address as a string
+     */
+    public String getClientIpAddress() {
+        if (clientSocket != null && clientSocket.getInetAddress() != null) {
+            return clientSocket.getInetAddress().getHostAddress();
+        }
+        return "Unknown";
+    }
+
+    /**
+     * Gets the client socket.
+     *
+     * @return The client socket
+     */
+    public Socket getClientSocket() {
+        return clientSocket;
     }
 }

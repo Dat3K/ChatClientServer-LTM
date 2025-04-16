@@ -9,7 +9,7 @@ import javax.swing.UIManager;
 
 import chatclientserver.ltm.client.ClientGUI;
 import chatclientserver.ltm.server.ChatServer;
-import chatclientserver.ltm.util.Constants;
+import chatclientserver.ltm.server.ServerGUI;
 
 /**
  * Main application class that provides entry points for both client and server.
@@ -18,7 +18,7 @@ public class App {
     /**
      * The main method that allows starting either the client or the server.
      *
-     * @param args Command line arguments (not used)
+     * @param args Command line arguments ("client", "server", or "both")
      */
     public static void main(String[] args) {
         try {
@@ -28,7 +28,24 @@ public class App {
             System.err.println("Error setting look and feel: " + e.getMessage());
         }
 
-        // Ask the user whether to start the client or the server
+        // Check if command line arguments were provided
+        if (args.length > 0) {
+            String arg = args[0].toLowerCase();
+
+            if (arg.equals("client")) {
+                startClient();
+                return;
+            } else if (arg.equals("server")) {
+                startServer();
+                return;
+            } else if (arg.equals("both")) {
+                startServer();
+                startClient();
+                return;
+            }
+        }
+
+        // If no valid arguments were provided, show the dialog
         String[] options = {"Client", "Server", "Both", "Exit"};
         int choice = JOptionPane.showOptionDialog(
             null,
@@ -73,13 +90,13 @@ public class App {
     }
 
     /**
-     * Starts the chat server.
+     * Starts the chat server with a GUI.
      */
     private static void startServer() {
         try {
-            System.out.println("Starting Chat Server...");
-            ChatServer.getInstance().start(Constants.DEFAULT_SERVER_PORT);
-            System.out.println("Server is running on port " + Constants.DEFAULT_SERVER_PORT);
+            System.out.println("Starting Chat Server GUI...");
+            ServerGUI serverGUI = new ServerGUI();
+            serverGUI.setVisible(true);
 
             // Add a shutdown hook to stop the server gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
