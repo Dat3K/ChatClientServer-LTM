@@ -2,7 +2,6 @@ package chatclientserver.ltm.encryption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,22 +60,47 @@ public class PlayfairCipherTest {
         // Decrypt and verify
         String decrypted = cipher.decrypt(encrypted);
 
-        // The decrypted text should not contain special characters or spaces
-        assertEquals("HELXLOWORLDX", decrypted);
+        // The decrypted text should now contain Z for spaces
+        assertEquals("HELXLOZWORLDZX", decrypted);
     }
 
     @Test
     public void testWithVietnamesePhrase() {
         // Test with the Vietnamese phrase "xin chào"
-        String plaintext = "xin chao";
+        String plaintext = "xin chào";
         String encrypted = cipher.encrypt(plaintext);
 
         // Decrypt and verify
         String decrypted = cipher.decrypt(encrypted);
 
-        // The decrypted text should be "XINCHAO" (without diacritics)
-        // But it might have an X inserted if there are repeated letters
-        assertTrue(decrypted.equals("XINCHAO") || decrypted.contains("XINCHAO"));
+        // The decrypted text should be "XINZCHAO" (with Z for space and without diacritics)
+        assertEquals("XINZCHAO", decrypted);
+    }
+
+    @Test
+    public void testWithSpaces() {
+        // Test with spaces
+        String plaintext = "hello world";
+        String encrypted = cipher.encrypt(plaintext);
+
+        // Decrypt and verify
+        String decrypted = cipher.decrypt(encrypted);
+
+        // The decrypted text should have Z instead of spaces
+        assertEquals("HELXLOZWORLD", decrypted);
+    }
+
+    @Test
+    public void testWithVietnameseAndSpaces() {
+        // Test with Vietnamese text and spaces
+        String plaintext = "Tiếng Việt";
+        String encrypted = cipher.encrypt(plaintext);
+
+        // Decrypt and verify
+        String decrypted = cipher.decrypt(encrypted);
+
+        // The decrypted text should have Z for spaces and no diacritical marks
+        assertEquals("TIENGZVIET", decrypted);
     }
 
     @Test
