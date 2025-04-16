@@ -122,8 +122,8 @@ public class ClientGUI extends JFrame implements MessageListener {
         fileButton = new JButton("Send File");
         fileButton.setEnabled(false);
 
-        logoutButton = new JButton("Logout");
-        logoutButton.setEnabled(false); // Disabled until login
+        logoutButton = new JButton("Login"); // Initially shows "Login"
+        logoutButton.setEnabled(true); // Enabled by default for login
 
         keyExchangeButton = new JButton("Exchange Key");
         keyExchangeButton.setEnabled(false);
@@ -223,19 +223,25 @@ public class ClientGUI extends JFrame implements MessageListener {
      * Sets up the event handlers for the GUI components.
      */
     private void setupEventHandlers() {
-        // Logout button
+        // Logout/Login button
         logoutButton.addActionListener(e -> {
-            // Disconnect if connected
             if (chatClient.isConnected()) {
+                // Currently logged in - perform logout
+                // Disconnect if connected
                 disconnect();
+
+                // Reset user info
+                chatClient.setCurrentUser(null);
+                updateUserLabel();
+
+                // Change button text to "Login"
+                logoutButton.setText("Login");
+            } else {
+                // Currently logged out - perform login
+                showLoginDialog(true);
+
+                // If login was successful, button text will be changed to "Logout" in the login method
             }
-
-            // Reset user info
-            chatClient.setCurrentUser(null);
-            updateUserLabel();
-
-            // Show login dialog with relogin flag
-            showLoginDialog(true);
         });
 
         // Send button
@@ -275,7 +281,7 @@ public class ClientGUI extends JFrame implements MessageListener {
         if (connected) {
             statusLabel.setText("Connected to " + serverHost + ":" + serverPort);
             statusLabel.setForeground(Color.GREEN.darker());
-            logoutButton.setEnabled(true);
+            // Don't change logoutButton here, it's handled in the login method
             messageField.setEnabled(true);
             sendButton.setEnabled(true);
             fileButton.setEnabled(true);
@@ -305,7 +311,7 @@ public class ClientGUI extends JFrame implements MessageListener {
 
         statusLabel.setText("Not connected");
         statusLabel.setForeground(Color.RED);
-        logoutButton.setEnabled(false);
+        // Don't change logoutButton here, it's handled in the action listener
         messageField.setEnabled(false);
         sendButton.setEnabled(false);
         fileButton.setEnabled(false);
@@ -487,7 +493,8 @@ public class ClientGUI extends JFrame implements MessageListener {
             chatClient.setCurrentUser(user);
             updateUserLabel();
 
-            // Enable logout button after successful login
+            // Change button text to "Logout" and ensure it's enabled
+            logoutButton.setText("Logout");
             logoutButton.setEnabled(true);
 
 

@@ -75,6 +75,11 @@ public class ChatClient {
             connected = true;
             currentUser = user;
 
+            // Check if executor service is shutdown and recreate if necessary
+            if (executorService.isShutdown()) {
+                executorService = Executors.newSingleThreadExecutor();
+            }
+
             // Start listening for messages from the server
             executorService.execute(this::listenForMessages);
 
@@ -139,23 +144,47 @@ public class ChatClient {
      * Disconnects from the server.
      */
     public void disconnect() {
+        // If not connected, nothing to do
+        if (!connected) {
+            return;
+        }
+
         connected = false;
 
         try {
+            // Close streams and socket if they exist
             if (outputStream != null) {
-                outputStream.close();
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    // Ignore, we're disconnecting anyway
+                }
+                outputStream = null;
             }
+
             if (inputStream != null) {
-                inputStream.close();
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    // Ignore, we're disconnecting anyway
+                }
+                inputStream = null;
             }
+
             if (socket != null && !socket.isClosed()) {
-                socket.close();
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    // Ignore, we're disconnecting anyway
+                }
+                socket = null;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println("Error disconnecting from server: " + e.getMessage());
         }
 
-        executorService.shutdown();
+        // Don't shutdown the executor service, just let it finish its tasks
+        // If we shutdown here, we won't be able to use it again for reconnection
     }
 
     /**
@@ -268,7 +297,7 @@ public class ChatClient {
      */
     private void listenForMessages() {
         try {
-            while (connected) {
+            while (connected && socket != null && !socket.isClosed() && inputStream != null) {
                 // Read the message type
                 int messageType = inputStream.readInt();
 
