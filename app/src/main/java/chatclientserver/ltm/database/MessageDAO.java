@@ -161,4 +161,68 @@ public class MessageDAO {
         message.setTimestamp(resultSet.getTimestamp("timestamp"));
         return message;
     }
+
+    /**
+     * Gets the chat history for a user.
+     *
+     * @param limit The maximum number of messages to retrieve
+     * @return A list of messages
+     */
+    public List<Message> getChatHistory(int limit) {
+        List<Message> messages = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM messages ORDER BY timestamp DESC LIMIT ?";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, limit);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Message message = mapResultSetToMessage(resultSet);
+                messages.add(message);
+            }
+
+            // Reverse the list to get chronological order
+            java.util.Collections.reverse(messages);
+
+        } catch (SQLException e) {
+            System.err.println("Error getting chat history: " + e.getMessage());
+        }
+
+        return messages;
+    }
+
+    /**
+     * Gets the chat history for a specific user.
+     *
+     * @param userId The user ID
+     * @param limit The maximum number of messages to retrieve
+     * @return A list of messages
+     */
+    public List<Message> getChatHistoryForUser(int userId, int limit) {
+        List<Message> messages = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM messages WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, userId);
+            statement.setInt(2, limit);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Message message = mapResultSetToMessage(resultSet);
+                messages.add(message);
+            }
+
+            // Reverse the list to get chronological order
+            java.util.Collections.reverse(messages);
+
+        } catch (SQLException e) {
+            System.err.println("Error getting chat history for user: " + e.getMessage());
+        }
+
+        return messages;
+    }
 }

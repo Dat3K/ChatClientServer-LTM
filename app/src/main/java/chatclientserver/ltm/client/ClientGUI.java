@@ -13,6 +13,9 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+
+import chatclientserver.ltm.model.Message;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -558,6 +561,10 @@ public class ClientGUI extends JFrame implements MessageListener {
                     return false;
                 }
             }
+
+            // Load and display chat history
+            loadChatHistory();
+
             JOptionPane.showMessageDialog(this, "Login successful. Welcome, " + user.getUsername() + "!", "Login", JOptionPane.INFORMATION_MESSAGE);
             return true;
         }
@@ -579,6 +586,55 @@ public class ClientGUI extends JFrame implements MessageListener {
             userLabel.setForeground(Color.GRAY);
             // loginButton removed
         }
+    }
+
+    /**
+     * Loads and displays the chat history.
+     */
+    private void loadChatHistory() {
+        // Clear the chat area first
+        chatArea.setText("");
+
+        // Get chat history for current user only (last 50 messages)
+        User currentUser = chatClient.getCurrentUser();
+        if (currentUser == null) {
+            appendToChatArea("No user logged in.");
+            return;
+        }
+
+        List<Message> chatHistory = chatClient.getChatHistoryForCurrentUser(50);
+
+        if (chatHistory.isEmpty()) {
+            appendToChatArea("No chat history available.");
+            return;
+        }
+
+        // Display a header
+        appendToChatArea("--- Your Chat History ---");
+
+        // Display each message
+        for (Message message : chatHistory) {
+            // Format the message with timestamp and username if available
+            StringBuilder formattedMessage = new StringBuilder();
+
+            // Add timestamp
+            if (message.getTimestamp() != null) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                formattedMessage.append("[").append(sdf.format(message.getTimestamp())).append("] ");
+            }
+
+            // Add username (since these are the current user's messages)
+            formattedMessage.append("You: ");
+
+            // Add the message content
+            formattedMessage.append(message.getDecryptedMessage());
+
+            // Append to chat area
+            appendToChatArea(formattedMessage.toString());
+        }
+
+        // Add a separator
+        appendToChatArea("--- End of History ---");
     }
 
     /**

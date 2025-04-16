@@ -9,12 +9,15 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import chatclientserver.ltm.database.MessageDAO;
 import chatclientserver.ltm.encryption.PlayfairCipher;
 import chatclientserver.ltm.model.FileTransfer;
 import chatclientserver.ltm.model.Message;
 import chatclientserver.ltm.model.User;
 import chatclientserver.ltm.util.Constants;
 import chatclientserver.ltm.util.FileUtils;
+
+import java.util.List;
 
 /**
  * Client class for the chat application.
@@ -29,6 +32,7 @@ public class ChatClient {
     private MessageListener messageListener;
     private String currentKey;
     private User currentUser;
+    private MessageDAO messageDAO;
 
     /**
      * Constructs a ChatClient.
@@ -36,6 +40,7 @@ public class ChatClient {
     public ChatClient() {
         executorService = Executors.newSingleThreadExecutor();
         currentKey = Constants.DEFAULT_KEY;
+        messageDAO = new MessageDAO();
     }
 
     /**
@@ -423,5 +428,28 @@ public class ChatClient {
          * @param key The key
          */
         void onKeyExchangeReceived(String key);
+    }
+
+    /**
+     * Gets the chat history.
+     *
+     * @param limit The maximum number of messages to retrieve
+     * @return A list of messages
+     */
+    public List<Message> getChatHistory(int limit) {
+        return messageDAO.getChatHistory(limit);
+    }
+
+    /**
+     * Gets the chat history for the current user.
+     *
+     * @param limit The maximum number of messages to retrieve
+     * @return A list of messages
+     */
+    public List<Message> getChatHistoryForCurrentUser(int limit) {
+        if (currentUser == null) {
+            return java.util.Collections.emptyList();
+        }
+        return messageDAO.getChatHistoryForUser(currentUser.getId(), limit);
     }
 }
