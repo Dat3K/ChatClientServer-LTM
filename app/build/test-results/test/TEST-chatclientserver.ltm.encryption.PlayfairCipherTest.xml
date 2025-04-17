@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="chatclientserver.ltm.encryption.PlayfairCipherTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2025-04-17T12:42:07" hostname="DAT3K" time="0.066">
+  <properties/>
+  <testcase name="testWithDifferentKeys()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.044"/>
+  <testcase name="testWithVietnamesePhrase()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.002"/>
+  <testcase name="testWithVietnameseAndSpaces()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.001"/>
+  <testcase name="testWithSpecialCharacters()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.001"/>
+  <testcase name="testWithEmptyString()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.001"/>
+  <testcase name="testDecryption()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.001"/>
+  <testcase name="testWithSpaces()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.005"/>
+  <testcase name="testWithLongText()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.001"/>
+  <testcase name="testEncryption()" classname="chatclientserver.ltm.encryption.PlayfairCipherTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

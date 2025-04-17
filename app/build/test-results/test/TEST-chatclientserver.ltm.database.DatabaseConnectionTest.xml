@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="chatclientserver.ltm.database.DatabaseConnectionTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2025-04-17T12:42:07" hostname="DAT3K" time="0.039">
+  <properties/>
+  <testcase name="testConnection()" classname="chatclientserver.ltm.database.DatabaseConnectionTest" time="0.036"/>
+  <testcase name="testSingleton()" classname="chatclientserver.ltm.database.DatabaseConnectionTest" time="0.002"/>
+  <system-out><![CDATA[Database tables created successfully.
+Database connection established successfully.
+Database connection closed.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

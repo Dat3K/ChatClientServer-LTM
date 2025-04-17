@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="chatclientserver.ltm.server.ClientHandlerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2025-04-17T12:42:07" hostname="DAT3K" time="0.002">
+  <properties/>
+  <testcase name="testFindPhrasePositions()" classname="chatclientserver.ltm.server.ClientHandlerTest" time="0.0"/>
+  <testcase name="testPrepareSearchPhrase()" classname="chatclientserver.ltm.server.ClientHandlerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
