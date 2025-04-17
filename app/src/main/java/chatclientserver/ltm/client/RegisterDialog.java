@@ -1,6 +1,7 @@
 package chatclientserver.ltm.client;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -14,139 +15,180 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
 import chatclientserver.ltm.database.UserDAO;
 import chatclientserver.ltm.model.User;
+import chatclientserver.ltm.util.Constants;
+import chatclientserver.ltm.util.PlaceholderTextField;
+import chatclientserver.ltm.util.UIUtils;
 
 /**
  * Dialog for user registration.
  */
 public class RegisterDialog extends JDialog {
     private static final long serialVersionUID = 1L;
-    
-    private JTextField usernameField;
+
+    private PlaceholderTextField usernameField;
     private JPasswordField passwordField;
     private JPasswordField confirmPasswordField;
-    private JTextField emailField;
-    private JTextField fullNameField;
+    private PlaceholderTextField emailField;
+    private PlaceholderTextField fullNameField;
     private JButton registerButton;
     private JButton cancelButton;
-    
+
     private UserDAO userDAO;
     private User registeredUser;
     private boolean registrationSuccessful;
-    
+
     /**
      * Constructs a RegisterDialog.
-     * 
+     *
      * @param parent The parent dialog
      */
     public RegisterDialog(JDialog parent) {
         super(parent, "Register", true);
-        
+
         userDAO = new UserDAO();
-        
+
+        // Set up the look and feel
+        UIUtils.setupLookAndFeel();
+        setBackground(UIUtils.BACKGROUND_COLOR);
+
         initComponents();
         layoutComponents();
         setupEventHandlers();
-        
+
         pack();
         setLocationRelativeTo(parent);
         setResizable(false);
     }
-    
+
     /**
      * Initializes the dialog components.
      */
     private void initComponents() {
-        usernameField = new JTextField(20);
+        usernameField = UIUtils.createStyledTextField(20);
+        usernameField.setPlaceholder("Enter your username");
+
         passwordField = new JPasswordField(20);
+        passwordField.setFont(UIUtils.BODY_FONT);
+        passwordField.setBorder(UIUtils.FIELD_BORDER);
+        passwordField.setPreferredSize(new java.awt.Dimension(passwordField.getPreferredSize().width, Constants.INPUT_HEIGHT));
+
         confirmPasswordField = new JPasswordField(20);
-        emailField = new JTextField(20);
-        fullNameField = new JTextField(20);
-        
-        registerButton = new JButton("Register");
-        cancelButton = new JButton("Cancel");
+        confirmPasswordField.setFont(UIUtils.BODY_FONT);
+        confirmPasswordField.setBorder(UIUtils.FIELD_BORDER);
+        confirmPasswordField.setPreferredSize(new java.awt.Dimension(confirmPasswordField.getPreferredSize().width, Constants.INPUT_HEIGHT));
+
+        emailField = UIUtils.createStyledTextField(20);
+        emailField.setPlaceholder("Enter your email address");
+
+        fullNameField = UIUtils.createStyledTextField(20);
+        fullNameField.setPlaceholder("Enter your full name (optional)");
+
+        registerButton = UIUtils.createStyledButton("Register", true);
+        cancelButton = UIUtils.createStyledButton("Cancel", false);
     }
-    
+
     /**
      * Lays out the dialog components.
      */
     private void layoutComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
+        // Main panel with gradient background
+        JPanel mainPanel = UIUtils.createGradientPanel(UIUtils.BACKGROUND_COLOR, new Color(235, 235, 235));
+        mainPanel.setLayout(new BorderLayout(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM));
+        mainPanel.setBorder(new EmptyBorder(Constants.PADDING_LARGE, Constants.PADDING_LARGE,
+                Constants.PADDING_LARGE, Constants.PADDING_LARGE));
+
+        // Card panel for input fields
+        JPanel cardPanel = UIUtils.createCardPanel();
+        cardPanel.setLayout(new GridBagLayout());
+
         // Input panel
         JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM,
+                Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        
-        // Username
+
+        // Title
+        JLabel titleLabel = UIUtils.createStyledLabel("Create New Account", true);
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        inputPanel.add(titleLabel, gbc);
+
+        // Username
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Username:"), gbc);
-        
+        inputPanel.add(UIUtils.createStyledLabel("Username:", false), gbc);
+
         gbc.gridx = 1;
         gbc.weightx = 1;
         inputPanel.add(usernameField, gbc);
-        
+
         // Password
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0;
-        inputPanel.add(new JLabel("Password:"), gbc);
-        
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        inputPanel.add(passwordField, gbc);
-        
-        // Confirm Password
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Confirm Password:"), gbc);
-        
+        inputPanel.add(UIUtils.createStyledLabel("Password:", false), gbc);
+
         gbc.gridx = 1;
         gbc.weightx = 1;
-        inputPanel.add(confirmPasswordField, gbc);
-        
-        // Email
+        inputPanel.add(passwordField, gbc);
+
+        // Confirm Password
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Email:"), gbc);
-        
+        inputPanel.add(UIUtils.createStyledLabel("Confirm Password:", false), gbc);
+
         gbc.gridx = 1;
         gbc.weightx = 1;
-        inputPanel.add(emailField, gbc);
-        
-        // Full Name
+        inputPanel.add(confirmPasswordField, gbc);
+
+        // Email
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Full Name:"), gbc);
-        
+        inputPanel.add(UIUtils.createStyledLabel("Email:", false), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        inputPanel.add(emailField, gbc);
+
+        // Full Name
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.weightx = 0;
+        inputPanel.add(UIUtils.createStyledLabel("Full Name:", false), gbc);
+
         gbc.gridx = 1;
         gbc.weightx = 1;
         inputPanel.add(fullNameField, gbc);
-        
+
+        // Add input panel to card panel
+        cardPanel.add(inputPanel);
+
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(registerButton);
         buttonPanel.add(cancelButton);
-        
+
         // Add panels to main panel
-        mainPanel.add(inputPanel, BorderLayout.CENTER);
+        mainPanel.add(cardPanel, BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        
+
         // Set content pane
         setContentPane(mainPanel);
     }
-    
+
     /**
      * Sets up the event handlers.
      */
@@ -158,7 +200,7 @@ public class RegisterDialog extends JDialog {
                 register();
             }
         });
-        
+
         // Cancel button
         cancelButton.addActionListener(new ActionListener() {
             @Override
@@ -167,7 +209,7 @@ public class RegisterDialog extends JDialog {
             }
         });
     }
-    
+
     /**
      * Attempts to register a new user.
      */
@@ -177,40 +219,40 @@ public class RegisterDialog extends JDialog {
         String confirmPassword = new String(confirmPasswordField.getPassword());
         String email = emailField.getText().trim();
         String fullName = fullNameField.getText().trim();
-        
+
         // Validate input
         if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || email.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Registration Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         if (!password.equals(confirmPassword)) {
             JOptionPane.showMessageDialog(this, "Passwords do not match.", "Registration Error", JOptionPane.ERROR_MESSAGE);
             passwordField.setText("");
             confirmPasswordField.setText("");
             return;
         }
-        
+
         if (!isValidEmail(email)) {
             JOptionPane.showMessageDialog(this, "Please enter a valid email address.", "Registration Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         // Check if username is available
         if (!userDAO.isUsernameAvailable(username)) {
             JOptionPane.showMessageDialog(this, "Username is already taken.", "Registration Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         // Check if email is available
         if (!userDAO.isEmailAvailable(email)) {
             JOptionPane.showMessageDialog(this, "Email is already registered.", "Registration Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         // Register the user
         int userId = userDAO.registerUser(username, password, email, fullName);
-        
+
         if (userId > 0) {
             registeredUser = userDAO.getUserById(userId);
             registrationSuccessful = true;
@@ -219,10 +261,10 @@ public class RegisterDialog extends JDialog {
             JOptionPane.showMessageDialog(this, "Registration failed. Please try again.", "Registration Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
     /**
      * Validates an email address.
-     * 
+     *
      * @param email The email address to validate
      * @return true if the email is valid, false otherwise
      */
@@ -230,19 +272,19 @@ public class RegisterDialog extends JDialog {
         // Simple email validation
         return email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
     }
-    
+
     /**
      * Checks if the registration was successful.
-     * 
+     *
      * @return true if the registration was successful, false otherwise
      */
     public boolean isRegistrationSuccessful() {
         return registrationSuccessful;
     }
-    
+
     /**
      * Gets the registered user.
-     * 
+     *
      * @return The registered user, or null if registration failed
      */
     public User getRegisteredUser() {

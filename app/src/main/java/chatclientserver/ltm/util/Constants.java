@@ -34,9 +34,24 @@ public class Constants {
     public static final String DEFAULT_KEY = "PLAYFAIR";
 
     // GUI constants
-    public static final int GUI_WIDTH = 800;
-    public static final int GUI_HEIGHT = 600;
+    public static final int GUI_WIDTH = 900;
+    public static final int GUI_HEIGHT = 650;
     public static final int TEXT_AREA_ROWS = 20;
     public static final int TEXT_AREA_COLS = 50;
     public static final int TEXT_FIELD_COLS = 40;
+
+    // UI constants
+    public static final int PADDING_SMALL = 5;
+    public static final int PADDING_MEDIUM = 10;
+    public static final int PADDING_LARGE = 15;
+    public static final int BORDER_RADIUS = 10;
+    public static final int BUTTON_HEIGHT = 36;
+    public static final int INPUT_HEIGHT = 36;
+
+    // Status constants
+    public static final int STATUS_NORMAL = 0;
+    public static final int STATUS_SUCCESS = 1;
+    public static final int STATUS_ERROR = 2;
+    public static final int STATUS_WARNING = 3;
+    public static final int STATUS_INFO = 4;
 }

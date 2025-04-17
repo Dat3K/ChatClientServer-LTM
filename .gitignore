@@ -11,7 +11,6 @@
 .mtj.tmp/
 
 # Package Files
-*.jar
 *.war
 *.nar
 *.ear
@@ -58,9 +57,6 @@ buildNumber.properties
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Application specific
-received_files/
 
 # Ignore Gradle project-specific cache directory
 .gradle

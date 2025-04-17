@@ -2,16 +2,13 @@ package chatclientserver.ltm.client;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -24,20 +21,16 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import com.formdev.flatlaf.FlatLightLaf;
-
+import chatclientserver.ltm.util.UIUtils;
+import chatclientserver.ltm.util.PlaceholderTextField;
+import chatclientserver.ltm.util.Constants;
 import chatclientserver.ltm.client.ChatClient.MessageListener;
 import chatclientserver.ltm.encryption.PlayfairCipher;
 import chatclientserver.ltm.model.User;
-import chatclientserver.ltm.util.Constants;
 
 /**
  * Graphical user interface for the chat client.
@@ -46,28 +39,25 @@ public class ClientGUI extends JFrame implements MessageListener {
     private static final long serialVersionUID = 1L;
 
     private ChatClient chatClient;
-    private JTextArea chatArea;
-    private JTextField messageField;
-    private JTextField keyField;
+    private ChatPanel chatPanel;
+    private PlaceholderTextField messageField;
+    private PlaceholderTextField keyField;
     private JButton sendButton;
     private JButton fileButton;
     private JButton logoutButton;
     private JButton keyExchangeButton;
-    // loginButton removed
     private JLabel statusLabel;
     private JLabel positionsLabel;
     private JLabel userLabel;
+    private JPanel statusPanel;
+    private JPanel inputPanel;
 
     /**
      * Constructs the client GUI.
      */
     public ClientGUI() {
         // Set up the look and feel
-        try {
-            UIManager.setLookAndFeel(new FlatLightLaf());
-        } catch (Exception e) {
-            System.err.println("Failed to initialize LaF: " + e.getMessage());
-        }
+        UIUtils.setupLookAndFeel();
 
         // Create the chat client
         chatClient = new ChatClient();
@@ -78,6 +68,7 @@ public class ClientGUI extends JFrame implements MessageListener {
         setSize(Constants.GUI_WIDTH, Constants.GUI_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        setBackground(UIUtils.BACKGROUND_COLOR);
 
         // Add a window listener to disconnect when the window is closed
         addWindowListener(new WindowAdapter() {
@@ -103,69 +94,75 @@ public class ClientGUI extends JFrame implements MessageListener {
      * Initializes the GUI components.
      */
     private void initComponents() {
-        // Chat area
-        chatArea = new JTextArea();
-        chatArea.setEditable(false);
-        chatArea.setLineWrap(true);
-        chatArea.setWrapStyleWord(true);
-        chatArea.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        // Chat panel
+        chatPanel = new ChatPanel();
 
         // Message field
-        messageField = new JTextField(Constants.TEXT_FIELD_COLS);
+        messageField = UIUtils.createStyledTextField(Constants.TEXT_FIELD_COLS);
         messageField.setEnabled(false);
+        messageField.setPlaceholder("Type your message here...");
 
         // Key field
-        keyField = new JTextField(10);
+        keyField = UIUtils.createStyledTextField(10);
         keyField.setText(Constants.DEFAULT_KEY);
 
         // Buttons
-        sendButton = new JButton("Send");
+        sendButton = UIUtils.createStyledButton("Send", true);
         sendButton.setEnabled(false);
 
-        fileButton = new JButton("Send File");
+        fileButton = UIUtils.createStyledButton("Send File", false);
         fileButton.setEnabled(false);
 
-        logoutButton = new JButton("Login"); // Initially shows "Login"
+        logoutButton = UIUtils.createStyledButton("Login", true); // Initially shows "Login"
         logoutButton.setEnabled(true); // Enabled by default for login
 
-        keyExchangeButton = new JButton("Exchange Key");
+        keyExchangeButton = UIUtils.createStyledButton("Exchange Key", false);
         keyExchangeButton.setEnabled(false);
 
-        // loginButton removed
+        // Status panel
+        statusPanel = UIUtils.createCardPanel();
 
         // Labels
-        statusLabel = new JLabel("Not connected");
-        statusLabel.setForeground(Color.RED);
+        statusLabel = UIUtils.createStatusLabel("Not connected", Constants.STATUS_ERROR);
 
-        positionsLabel = new JLabel("Positions: ");
+        positionsLabel = UIUtils.createStatusLabel("Positions: ", Constants.STATUS_NORMAL);
 
-        userLabel = new JLabel("Not logged in");
-        userLabel.setForeground(Color.GRAY);
+        userLabel = UIUtils.createStatusLabel("Not logged in", Constants.STATUS_NORMAL);
+
+        // Input panel
+        inputPanel = new JPanel();
+        inputPanel.setBackground(UIUtils.CARD_BACKGROUND_COLOR);
+        inputPanel.setBorder(UIUtils.PANEL_BORDER);
     }
 
     /**
      * Lays out the GUI components.
      */
     private void layoutComponents() {
-        // Main panel
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Main panel with gradient background
+        JPanel mainPanel = UIUtils.createGradientPanel(UIUtils.BACKGROUND_COLOR, new Color(235, 235, 235));
+        mainPanel.setLayout(new BorderLayout(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM));
+        mainPanel.setBorder(new EmptyBorder(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM,
+                Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM));
 
-        // Chat panel
-        JScrollPane chatScrollPane = new JScrollPane(chatArea);
-        chatScrollPane.setPreferredSize(new Dimension(400, 300));
+        // Set the current user for the chat panel
+        if (chatClient.getCurrentUser() != null) {
+            chatPanel.setCurrentUser(chatClient.getCurrentUser().getUsername());
+        }
 
-        // Input panel
-        JPanel inputPanel = new JPanel(new GridBagLayout());
+        // Input panel layout
+        inputPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(Constants.PADDING_SMALL, Constants.PADDING_SMALL,
+                Constants.PADDING_SMALL, Constants.PADDING_SMALL);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Message label and field
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Message:"), gbc);
+        JLabel messageLabel = UIUtils.createStyledLabel("Message:", false);
+        inputPanel.add(messageLabel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -178,7 +175,8 @@ public class ClientGUI extends JFrame implements MessageListener {
         // Key label and field
         gbc.gridx = 0;
         gbc.gridy = 1;
-        inputPanel.add(new JLabel("Key:"), gbc);
+        JLabel keyLabel = UIUtils.createStyledLabel("Key:", false);
+        inputPanel.add(keyLabel, gbc);
 
         gbc.gridx = 1;
         inputPanel.add(keyField, gbc);
@@ -191,22 +189,27 @@ public class ClientGUI extends JFrame implements MessageListener {
         gbc.gridy = 2;
         gbc.gridwidth = 3;
         JPanel filePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filePanel.setOpaque(false);
         filePanel.add(fileButton);
         inputPanel.add(filePanel, gbc);
 
-        // Status panel
-        JPanel statusPanel = new JPanel(new BorderLayout(5, 5));
-        statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // Status panel layout
+        statusPanel.setLayout(new BorderLayout(Constants.PADDING_SMALL, Constants.PADDING_SMALL));
+        statusPanel.setBorder(BorderFactory.createEmptyBorder(
+                Constants.PADDING_SMALL, Constants.PADDING_SMALL,
+                Constants.PADDING_SMALL, Constants.PADDING_SMALL));
 
         JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        connectionPanel.setOpaque(false);
         connectionPanel.add(statusLabel);
         connectionPanel.add(logoutButton);
-        // loginButton removed
 
         JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        userPanel.setOpaque(false);
         userPanel.add(userLabel);
 
         JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
         topPanel.add(connectionPanel, BorderLayout.WEST);
         topPanel.add(userPanel, BorderLayout.EAST);
 
@@ -214,7 +217,7 @@ public class ClientGUI extends JFrame implements MessageListener {
         statusPanel.add(positionsLabel, BorderLayout.SOUTH);
 
         // Add panels to main panel
-        mainPanel.add(chatScrollPane, BorderLayout.CENTER);
+        mainPanel.add(chatPanel, BorderLayout.CENTER);
         mainPanel.add(inputPanel, BorderLayout.SOUTH);
         mainPanel.add(statusPanel, BorderLayout.NORTH);
 
@@ -343,16 +346,19 @@ public class ClientGUI extends JFrame implements MessageListener {
         boolean sent = chatClient.sendMessage(message, key);
 
         if (sent) {
-            // Show the message in the chat area
-            appendToChatArea("You: " + message);
+            // Add the message to the chat panel as a user message
+            User currentUser = chatClient.getCurrentUser();
+            String username = currentUser != null ? currentUser.getUsername() : "You";
+            chatPanel.addMessage(message, username, new Date());
 
-            // Show the encrypted message
+            // Show the encrypted message as a system message
             PlayfairCipher cipher = new PlayfairCipher(key);
             String encrypted = cipher.encrypt(message);
-            appendToChatArea("Encrypted: " + encrypted);
+            chatPanel.addSystemMessage("Encrypted: " + encrypted);
 
             // Clear the message field
             messageField.setText("");
+            messageField.requestFocus();
         } else {
             JOptionPane.showMessageDialog(this, "Could not send the message.", "Send Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -407,20 +413,14 @@ public class ClientGUI extends JFrame implements MessageListener {
     }
 
     /**
-     * Appends a message to the chat area.
+     * Adds a message to the chat panel.
      *
-     * @param message The message to append
+     * @param message The message to add
      */
     private void appendToChatArea(String message) {
         SwingUtilities.invokeLater(() -> {
-            // Add timestamp
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-            String timestamp = sdf.format(new Date());
-
-            chatArea.append("[" + timestamp + "] " + message + "\n");
-
-            // Scroll to the bottom
-            chatArea.setCaretPosition(chatArea.getDocument().getLength());
+            // Add as a system message
+            chatPanel.addSystemMessage(message);
         });
     }
 
@@ -592,49 +592,38 @@ public class ClientGUI extends JFrame implements MessageListener {
      * Loads and displays the chat history.
      */
     private void loadChatHistory() {
-        // Clear the chat area first
-        chatArea.setText("");
+        // Clear the chat panel first
+        chatPanel.clearMessages();
 
         // Get chat history for current user only (last 50 messages)
         User currentUser = chatClient.getCurrentUser();
         if (currentUser == null) {
-            appendToChatArea("No user logged in.");
+            chatPanel.addSystemMessage("No user logged in.");
             return;
         }
 
         List<Message> chatHistory = chatClient.getChatHistoryForCurrentUser(50);
 
         if (chatHistory.isEmpty()) {
-            appendToChatArea("No chat history available.");
+            chatPanel.addSystemMessage("No chat history available.");
             return;
         }
 
         // Display a header
-        appendToChatArea("--- Your Chat History ---");
+        chatPanel.addSystemMessage("--- Your Chat History ---");
 
         // Display each message
         for (Message message : chatHistory) {
-            // Format the message with timestamp and username if available
-            StringBuilder formattedMessage = new StringBuilder();
-
-            // Add timestamp
-            if (message.getTimestamp() != null) {
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                formattedMessage.append("[").append(sdf.format(message.getTimestamp())).append("] ");
-            }
-
-            // Add username (since these are the current user's messages)
-            formattedMessage.append("You: ");
-
-            // Add the message content
-            formattedMessage.append(message.getDecryptedMessage());
-
-            // Append to chat area
-            appendToChatArea(formattedMessage.toString());
+            // Add the message to the chat panel
+            chatPanel.addMessage(
+                message.getDecryptedMessage(),
+                currentUser.getUsername(),
+                message.getTimestamp() != null ? message.getTimestamp() : new Date()
+            );
         }
 
         // Add a separator
-        appendToChatArea("--- End of History ---");
+        chatPanel.addSystemMessage("--- End of History ---");
     }
 
     /**

@@ -42,6 +42,7 @@ import chatclientserver.ltm.model.FileTransfer;
 import chatclientserver.ltm.model.Message;
 import chatclientserver.ltm.model.User;
 import chatclientserver.ltm.util.Constants;
+import chatclientserver.ltm.util.UIUtils;
 
 /**
  * Graphical user interface for the chat server.
@@ -78,11 +79,7 @@ public class ServerGUI extends JFrame implements ServerObserver {
      */
     public ServerGUI() {
         // Set up the look and feel
-        try {
-            UIManager.setLookAndFeel(new FlatLightLaf());
-        } catch (Exception e) {
-            System.err.println("Failed to initialize LaF: " + e.getMessage());
-        }
+        UIUtils.setupLookAndFeel();
 
         // Initialize data storage
         clientHandlers = new HashMap<>();
@@ -92,6 +89,7 @@ public class ServerGUI extends JFrame implements ServerObserver {
         setSize(Constants.GUI_WIDTH, Constants.GUI_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        setBackground(UIUtils.BACKGROUND_COLOR);
 
         // Add a window listener to stop the server when the window is closed
         addWindowListener(new WindowAdapter() {
@@ -126,77 +124,73 @@ public class ServerGUI extends JFrame implements ServerObserver {
      */
     private void initComponents() {
         // Status components
-        statusLabel = new JLabel("Server is stopped");
-        statusLabel.setForeground(Color.RED);
+        statusLabel = UIUtils.createStatusLabel("Server is stopped", Constants.STATUS_ERROR);
 
-        portLabel = new JLabel("Port:");
-        portField = new JTextField(5);
+        portLabel = UIUtils.createStyledLabel("Port:", false);
+        portField = UIUtils.createStyledTextField(5);
         portField.setText(String.valueOf(Constants.DEFAULT_SERVER_PORT));
 
-        clientsLabel = new JLabel("Connected clients: 0");
+        clientsLabel = UIUtils.createStyledLabel("Connected clients: 0", false);
 
-        startButton = new JButton("Start Server");
-        stopButton = new JButton("Stop Server");
+        startButton = UIUtils.createStyledButton("Start Server", true);
+        stopButton = UIUtils.createStyledButton("Stop Server", false);
         stopButton.setEnabled(false);
 
         // Log area
-        logArea = new JTextArea();
+        logArea = UIUtils.createStyledTextArea(10, 50);
         logArea.setEditable(false);
-        logArea.setLineWrap(true);
-        logArea.setWrapStyleWord(true);
-        logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        logArea.setFont(UIUtils.MONOSPACED_FONT);
 
         // Client list
         clientListModel = new DefaultListModel<>();
         clientList = new JList<>(clientListModel);
         clientList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        clientList.setFont(UIUtils.BODY_FONT);
+        clientList.setBackground(UIUtils.CARD_BACKGROUND_COLOR);
+        clientList.setBorder(UIUtils.FIELD_BORDER);
 
         // Tabbed pane for details
         tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(UIUtils.BODY_FONT);
 
         // Messages tab
-        messagesArea = new JTextArea();
+        messagesArea = UIUtils.createStyledTextArea(15, 50);
         messagesArea.setEditable(false);
-        messagesArea.setLineWrap(true);
-        messagesArea.setWrapStyleWord(true);
-        messagesArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        messagesArea.setFont(UIUtils.MONOSPACED_FONT);
 
         // Search results tab
-        searchResultsArea = new JTextArea();
+        searchResultsArea = UIUtils.createStyledTextArea(15, 50);
         searchResultsArea.setEditable(false);
-        searchResultsArea.setLineWrap(true);
-        searchResultsArea.setWrapStyleWord(true);
-        searchResultsArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        searchResultsArea.setFont(UIUtils.MONOSPACED_FONT);
 
         // File transfers tab
-        fileTransfersArea = new JTextArea();
+        fileTransfersArea = UIUtils.createStyledTextArea(15, 50);
         fileTransfersArea.setEditable(false);
-        fileTransfersArea.setLineWrap(true);
-        fileTransfersArea.setWrapStyleWord(true);
-        fileTransfersArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        fileTransfersArea.setFont(UIUtils.MONOSPACED_FONT);
 
         // Client details area
-        clientDetailsArea = new JTextArea();
+        clientDetailsArea = UIUtils.createStyledTextArea(15, 50);
         clientDetailsArea.setEditable(false);
-        clientDetailsArea.setLineWrap(true);
-        clientDetailsArea.setWrapStyleWord(true);
-        clientDetailsArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        clientDetailsArea.setFont(UIUtils.MONOSPACED_FONT);
     }
 
     /**
      * Lays out the GUI components.
      */
     private void layoutComponents() {
-        // Main panel
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Main panel with gradient background
+        JPanel mainPanel = UIUtils.createGradientPanel(UIUtils.BACKGROUND_COLOR, new Color(235, 235, 235));
+        mainPanel.setLayout(new BorderLayout(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM));
+        mainPanel.setBorder(new EmptyBorder(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM,
+                Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM));
 
         // Status panel
-        JPanel statusPanel = new JPanel(new GridBagLayout());
-        statusPanel.setBorder(BorderFactory.createTitledBorder("Server Status"));
+        JPanel statusPanel = UIUtils.createCardPanel();
+        statusPanel.setLayout(new GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(Constants.PADDING_SMALL, Constants.PADDING_SMALL,
+                Constants.PADDING_SMALL, Constants.PADDING_SMALL);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Status label
@@ -224,6 +218,7 @@ public class ServerGUI extends JFrame implements ServerObserver {
 
         // Start and stop buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(startButton);
         buttonPanel.add(stopButton);
 
@@ -233,44 +228,60 @@ public class ServerGUI extends JFrame implements ServerObserver {
         statusPanel.add(buttonPanel, gbc);
 
         // Log panel
-        JScrollPane logScrollPane = new JScrollPane(logArea);
+        JScrollPane logScrollPane = UIUtils.createStyledScrollPane(logArea);
         logScrollPane.setPreferredSize(new Dimension(400, 150));
-        JPanel logPanel = new JPanel(new BorderLayout());
-        logPanel.setBorder(BorderFactory.createTitledBorder("Server Log"));
+        JPanel logPanel = UIUtils.createCardPanel();
+        logPanel.setLayout(new BorderLayout());
+        logPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Server Log"),
+                BorderFactory.createEmptyBorder(Constants.PADDING_SMALL, Constants.PADDING_SMALL,
+                        Constants.PADDING_SMALL, Constants.PADDING_SMALL)));
         logPanel.add(logScrollPane, BorderLayout.CENTER);
 
         // Client list panel
-        JScrollPane clientListScrollPane = new JScrollPane(clientList);
+        JScrollPane clientListScrollPane = UIUtils.createStyledScrollPane(clientList);
         clientListScrollPane.setPreferredSize(new Dimension(200, 300));
-        JPanel clientListPanel = new JPanel(new BorderLayout());
-        clientListPanel.setBorder(BorderFactory.createTitledBorder("Connected Clients"));
+        JPanel clientListPanel = UIUtils.createCardPanel();
+        clientListPanel.setLayout(new BorderLayout());
+        clientListPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Connected Clients"),
+                BorderFactory.createEmptyBorder(Constants.PADDING_SMALL, Constants.PADDING_SMALL,
+                        Constants.PADDING_SMALL, Constants.PADDING_SMALL)));
         clientListPanel.add(clientListScrollPane, BorderLayout.CENTER);
 
         // Client details panel
-        JScrollPane clientDetailsScrollPane = new JScrollPane(clientDetailsArea);
-        JPanel clientDetailsPanel = new JPanel(new BorderLayout());
-        clientDetailsPanel.setBorder(BorderFactory.createTitledBorder("Client Details"));
+        JScrollPane clientDetailsScrollPane = UIUtils.createStyledScrollPane(clientDetailsArea);
+        JPanel clientDetailsPanel = UIUtils.createCardPanel();
+        clientDetailsPanel.setLayout(new BorderLayout());
+        clientDetailsPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Client Details"),
+                BorderFactory.createEmptyBorder(Constants.PADDING_SMALL, Constants.PADDING_SMALL,
+                        Constants.PADDING_SMALL, Constants.PADDING_SMALL)));
         clientDetailsPanel.add(clientDetailsScrollPane, BorderLayout.CENTER);
 
         // Messages tab
-        JScrollPane messagesScrollPane = new JScrollPane(messagesArea);
+        JScrollPane messagesScrollPane = UIUtils.createStyledScrollPane(messagesArea);
         tabbedPane.addTab("Messages", messagesScrollPane);
 
         // Search results tab
-        JScrollPane searchResultsScrollPane = new JScrollPane(searchResultsArea);
+        JScrollPane searchResultsScrollPane = UIUtils.createStyledScrollPane(searchResultsArea);
         tabbedPane.addTab("Search Results", searchResultsScrollPane);
 
         // File transfers tab
-        JScrollPane fileTransfersScrollPane = new JScrollPane(fileTransfersArea);
+        JScrollPane fileTransfersScrollPane = UIUtils.createStyledScrollPane(fileTransfersArea);
         tabbedPane.addTab("File Transfers", fileTransfersScrollPane);
 
         // Split pane for client list and details
         JSplitPane clientSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, clientListPanel, clientDetailsPanel);
         clientSplitPane.setResizeWeight(0.3);
+        clientSplitPane.setBorder(null);
+        clientSplitPane.setDividerSize(5);
 
         // Split pane for client info and tabbed pane
         JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, clientSplitPane, tabbedPane);
         mainSplitPane.setResizeWeight(0.4);
+        mainSplitPane.setBorder(null);
+        mainSplitPane.setDividerSize(5);
 
         // Add panels to main panel
         mainPanel.add(statusPanel, BorderLayout.NORTH);
@@ -354,7 +365,7 @@ public class ServerGUI extends JFrame implements ServerObserver {
 
             // Update the UI
             statusLabel.setText("Server is running on port " + port);
-            statusLabel.setForeground(Color.GREEN.darker());
+            statusLabel.setForeground(UIUtils.SUCCESS_COLOR);
             startButton.setEnabled(false);
             stopButton.setEnabled(true);
             portField.setEnabled(false);
@@ -637,7 +648,7 @@ public class ServerGUI extends JFrame implements ServerObserver {
         SwingUtilities.invokeLater(() -> {
             // Update the UI
             statusLabel.setText("Server is running on port " + port);
-            statusLabel.setForeground(Color.GREEN.darker());
+            statusLabel.setForeground(UIUtils.SUCCESS_COLOR);
             startButton.setEnabled(false);
             stopButton.setEnabled(true);
             portField.setEnabled(false);
@@ -652,7 +663,7 @@ public class ServerGUI extends JFrame implements ServerObserver {
         SwingUtilities.invokeLater(() -> {
             // Update the UI
             statusLabel.setText("Server is stopped");
-            statusLabel.setForeground(Color.RED);
+            statusLabel.setForeground(UIUtils.ERROR_COLOR);
             startButton.setEnabled(true);
             stopButton.setEnabled(false);
             portField.setEnabled(true);

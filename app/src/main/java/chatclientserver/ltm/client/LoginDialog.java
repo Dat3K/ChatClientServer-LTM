@@ -1,6 +1,7 @@
 package chatclientserver.ltm.client;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -15,11 +16,13 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
 import chatclientserver.ltm.database.UserDAO;
 import chatclientserver.ltm.model.User;
+import chatclientserver.ltm.util.Constants;
+import chatclientserver.ltm.util.PlaceholderTextField;
+import chatclientserver.ltm.util.UIUtils;
 
 /**
  * Dialog for user login.
@@ -27,10 +30,10 @@ import chatclientserver.ltm.model.User;
 public class LoginDialog extends JDialog {
     private static final long serialVersionUID = 1L;
 
-    private JTextField usernameField;
+    private PlaceholderTextField usernameField;
     private JPasswordField passwordField;
-    private JTextField serverHostField;
-    private JTextField serverPortField;
+    private PlaceholderTextField serverHostField;
+    private PlaceholderTextField serverPortField;
     private JButton loginButton;
     private JButton registerButton;
     private JButton cancelButton;
@@ -54,6 +57,10 @@ public class LoginDialog extends JDialog {
         // Prevent closing the dialog with the X button
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
+        // Set up the look and feel
+        UIUtils.setupLookAndFeel();
+        setBackground(UIUtils.BACKGROUND_COLOR);
+
         initComponents();
         layoutComponents();
         setupEventHandlers();
@@ -67,39 +74,64 @@ public class LoginDialog extends JDialog {
      * Initializes the dialog components.
      */
     private void initComponents() {
-        usernameField = new JTextField(20);
+        usernameField = UIUtils.createStyledTextField(20);
+        usernameField.setPlaceholder("Enter your username");
+
         passwordField = new JPasswordField(20);
+        passwordField.setFont(UIUtils.BODY_FONT);
+        passwordField.setBorder(UIUtils.FIELD_BORDER);
+        passwordField.setPreferredSize(new java.awt.Dimension(passwordField.getPreferredSize().width, Constants.INPUT_HEIGHT));
 
         // Server connection fields with default values
-        serverHostField = new JTextField(20);
+        serverHostField = UIUtils.createStyledTextField(20);
         serverHostField.setText("localhost");
+        serverHostField.setPlaceholder("Enter server address");
 
-        serverPortField = new JTextField(5);
+        serverPortField = UIUtils.createStyledTextField(5);
         serverPortField.setText("8888");
+        serverPortField.setPlaceholder("Port");
 
-        loginButton = new JButton("Login");
-        registerButton = new JButton("Register");
-        cancelButton = new JButton("Cancel");
+        loginButton = UIUtils.createStyledButton("Login", true);
+        registerButton = UIUtils.createStyledButton("Register", false);
+        cancelButton = UIUtils.createStyledButton("Cancel", false);
     }
 
     /**
      * Lays out the dialog components.
      */
     private void layoutComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // Main panel with gradient background
+        JPanel mainPanel = UIUtils.createGradientPanel(UIUtils.BACKGROUND_COLOR, new Color(235, 235, 235));
+        mainPanel.setLayout(new BorderLayout(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM));
+        mainPanel.setBorder(new EmptyBorder(Constants.PADDING_LARGE, Constants.PADDING_LARGE,
+                Constants.PADDING_LARGE, Constants.PADDING_LARGE));
+
+        // Card panel for input fields
+        JPanel cardPanel = UIUtils.createCardPanel();
+        cardPanel.setLayout(new GridBagLayout());
 
         // Input panel
         JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM,
+                Constants.PADDING_MEDIUM, Constants.PADDING_MEDIUM);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Title
+        JLabel titleLabel = UIUtils.createStyledLabel("Login to Chat", true);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        inputPanel.add(titleLabel, gbc);
 
         // Username
         gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Username:"), gbc);
+        inputPanel.add(UIUtils.createStyledLabel("Username:", false), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -107,9 +139,9 @@ public class LoginDialog extends JDialog {
 
         // Password
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Password:"), gbc);
+        inputPanel.add(UIUtils.createStyledLabel("Password:", false), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -117,9 +149,9 @@ public class LoginDialog extends JDialog {
 
         // Server Host
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Server Host:"), gbc);
+        inputPanel.add(UIUtils.createStyledLabel("Server Host:", false), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -127,22 +159,26 @@ public class LoginDialog extends JDialog {
 
         // Server Port
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.weightx = 0;
-        inputPanel.add(new JLabel("Server Port:"), gbc);
+        inputPanel.add(UIUtils.createStyledLabel("Server Port:", false), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1;
         inputPanel.add(serverPortField, gbc);
 
+        // Add input panel to card panel
+        cardPanel.add(inputPanel);
+
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(loginButton);
         buttonPanel.add(registerButton);
         buttonPanel.add(cancelButton);
 
         // Add panels to main panel
-        mainPanel.add(inputPanel, BorderLayout.CENTER);
+        mainPanel.add(cardPanel, BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // Set content pane
